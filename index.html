@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Voice-Controlled GitHub Assistant</title>
+  <title>Voice Input Demo</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,7 +38,7 @@
 </head>
 <body>
 
-  <h1>🎙 Voice-Controlled GitHub Assistant</h1>
+  <h1>🎙 Voice Input Demo</h1>
   <div id="chat"></div>
   <button id="talk">Start Talking</button>
 
@@ -51,14 +51,14 @@
     recognition.lang = "en-US";
     recognition.interimResults = false;
 
-    // 🔹 Speak text aloud
+    // Function: speak out loud
     function speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US";
       speechSynthesis.speak(utterance);
     }
 
-    // 🔹 Add messages to chat
+    // Function: add chat message
     function addMessage(msg, cls) {
       const p = document.createElement("p");
       p.textContent = msg;
@@ -67,58 +67,23 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // 🔹 GitHub API call (Create Issue)
-    async function createIssue(title, body) {
-      const token = "YOUR_GITHUB_TOKEN_HERE"; // ⚠ Replace with your PAT
-      const repoOwner = "your-username";      // ⚠ Replace
-      const repoName = "your-repo";           // ⚠ Replace
-
-      const url = https://api.github.com/repos/${repoOwner}/${repoName}/issues;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": token ${token},
-          "Accept": "application/vnd.github.v3+json`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          title: title,
-          body: body
-        })
-      });
-
-      if (response.ok) {
-        const issue = await response.json();
-        addMessage(Assistant: ✅ Issue created: ${issue.html_url}, "bot");
-        speak("Issue created successfully.");
-      } else {
-        const error = await response.json();
-        addMessage(Assistant: ❌ Error: ${error.message}, "bot");
-        speak("Sorry, I could not create the issue.");
-      }
-    }
-
-    // 🔹 Handle voice input
+    // When speech is recognized
     recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      addMessage("You: " + text, "user");
+      const userText = event.results[0][0].transcript;
+      addMessage("You: " + userText, "user");
 
-      // Simple command parsing
-      if (text.toLowerCase().includes("create issue")) {
-        const issueTitle = text.replace(/create issue/i, "").trim() || "New issue from Voice Assistant";
-        createIssue(issueTitle, "Created via Voice Assistant.");
-      } else {
-        const reply = "I only support 'create issue' right now.";
-        addMessage("Assistant: " + reply, "bot");
-        speak(reply);
-      }
+      // Bot reply (for demo, just echoing back)
+      let botReply = "You said: " + userText;
+      addMessage("Assistant: " + botReply, "bot");
+      speak(botReply);
     };
 
+    // If recognition errors
     recognition.onerror = (event) => {
       addMessage("Assistant: ❌ Error: " + event.error, "bot");
     };
 
+    // Button click → start recognition
     button.addEventListener("click", () => {
       recognition.start();
       addMessage("Assistant: 🎤 Listening...", "bot");
