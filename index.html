@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice-Controlled GitHub Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+      padding: 50px;
+    }
+    #chat {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      min-height: 200px;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow-y: auto;
+    }
+    p.user { color: blue; }
+    p.bot { color: green; }
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #45a049; }
+  </style>
+</head>
+<body>
+
+  <h1>🎙 Voice-Controlled GitHub Assistant</h1>
+  <div id="chat"></div>
+  <button id="talk">Start Talking</button>
+
+  <script>
+    const chatBox = document.getElementById("chat");
+    const button = document.getElementById("talk");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+
+    // 🔹 Speak text aloud
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      speechSynthesis.speak(utterance);
+    }
+
+    // 🔹 Add messages to chat
+    function addMessage(msg, cls) {
+      const p = document.createElement("p");
+      p.textContent = msg;
+      p.className = cls;
+      chatBox.appendChild(p);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 🔹 GitHub API call (Create Issue)
+    async function createIssue(title, body) {
+      const token = "YOUR_GITHUB_TOKEN_HERE"; // ⚠ Replace with your PAT
+      const repoOwner = "your-username";      // ⚠ Replace
+      const repoName = "your-repo";           // ⚠ Replace
+
+      const url = https://api.github.com/repos/${repoOwner}/${repoName}/issues;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": token ${token},
+          "Accept": "application/vnd.github.v3+json`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title: title,
+          body: body
+        })
+      });
+
+      if (response.ok) {
+        const issue = await response.json();
+        addMessage(Assistant: ✅ Issue created: ${issue.html_url}, "bot");
+        speak("Issue created successfully.");
+      } else {
+        const error = await response.json();
+        addMessage(Assistant: ❌ Error: ${error.message}, "bot");
+        speak("Sorry, I could not create the issue.");
+      }
+    }
+
+    // 🔹 Handle voice input
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      addMessage("You: " + text, "user");
+
+      // Simple command parsing
+      if (text.toLowerCase().includes("create issue")) {
+        const issueTitle = text.replace(/create issue/i, "").trim() || "New issue from Voice Assistant";
+        createIssue(issueTitle, "Created via Voice Assistant.");
+      } else {
+        const reply = "I only support 'create issue' right now.";
+        addMessage("Assistant: " + reply, "bot");
+        speak(reply);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      addMessage("Assistant: ❌ Error: " + event.error, "bot");
+    };
+
+    button.addEventListener("click", () => {
+      recognition.start();
+      addMessage("Assistant: 🎤 Listening...", "bot");
+    });
+  </script>
+
+</body>
+</html>
