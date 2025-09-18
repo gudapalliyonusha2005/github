@@ -1,94 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Voice Input Demo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      text-align: center;
-      padding: 50px;
-    }
-    #chat {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      min-height: 200px;
-      text-align: left;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      overflow-y: auto;
-    }
-    p.user { color: blue; }
-    p.bot { color: green; }
-    button {
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover { background: #45a049; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco Route Tracker</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_API_KEY&libraries=places"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            margin: 0;
+        }
+
+        #location {
+            margin: 20px 0;
+        }
+
+        #route-info {
+            margin: 20px 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 400px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #routeDetails {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result {
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
+    <h1>Eco Route Tracker</h1>
+    <div id="location">
+        <button id="getLocation">Get My Current Location</button>
+        <p id="locationInfo"></p>
+    </div>
 
-  <h1>🎙 Voice Input Demo</h1>
-  <div id="chat"></div>
-  <button id="talk">Start Talking</button>
+    <div id="route-info">
+        <label for="destination">Enter Destination:</label>
+        <input type="text" id="destination" placeholder="Enter destination">
+        <button id="findRoute">Find Eco-Friendly Route</button>
+    </div>
 
-  <script>
-    const chatBox = document.getElementById("chat");
-    const button = document.getElementById("talk");
+    <div id="routeDetails">
+        <h2>Route Information</h2>
+        <p class="result"><strong>Starting Point:</strong> <span id="start-location"></span></p>
+        <p class="result"><strong>Ending Point:</strong> <span id="end-location"></span></p>
+        <p class="result"><strong>Estimated Time:</strong> <span id="estimated-time"></span></p>
+        <p class="result"><strong>Carbon Saved:</strong> <span id="carbon-saved"></span> grams</p>
+    </div>
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
+    <div id="map"></div>
 
-    // Function: speak out loud
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      speechSynthesis.speak(utterance);
-    }
+    <script>
+        let map, directionsService, directionsRenderer;
+        let currentLocation = { lat: 0, lng: 0 };
 
-    // Function: add chat message
-    function addMessage(msg, cls) {
-      const p = document.createElement("p");
-      p.textContent = msg;
-      p.className = cls;
-      chatBox.appendChild(p);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
+        // Initialize Google Map
+        function initMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
 
-    // When speech is recognized
-    recognition.onresult = (event) => {
-      const userText = event.results[0][0].transcript;
-      addMessage("You: " + userText, "user");
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: currentLocation,
+                zoom: 14,
+            });
+            directionsRenderer.setMap(map);
+        }
 
-      // Bot reply (for demo, just echoing back)
-      let botReply = "You said: " + userText;
-      addMessage("Assistant: " + botReply, "bot");
-      speak(botReply);
-    };
+        // Get the user's current location
+        document.getElementById("getLocation").addEventListener("click", () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    };
+                    document.getElementById("locationInfo").innerText = Current Location: Lat: ${currentLocation.lat}, Lng: ${currentLocation.lng};
+                    map.setCenter(currentLocation);
+                    map.setZoom(14);
+                }, () => {
+                    alert("Geolocation service failed.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
 
-    // If recognition errors
-    recognition.onerror = (event) => {
-      addMessage("Assistant: ❌ Error: " + event.error, "bot");
-    };
+        // Find the eco-friendly route and calculate carbon savings
+        document.getElementById("findRoute").addEventListener("click", () => {
+            const destination = document.getElementById("destination").value;
+            if (!destination) {
+                alert("Please enter a destination.");
+                return;
+            }
 
-    // Button click → start recognition
-    button.addEventListener("click", () => {
-      recognition.start();
-      addMessage("Assistant: 🎤 Listening...", "bot");
-    });
-  </script>
+            const request = {
+                origin: new google.maps.LatLng(currentLocation.lat, currentLocation.lng),
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+                unitSystem: google.maps.UnitSystem.METRIC,
+            };
 
+            directionsService.route(request, (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+                    const route = result.routes[0].legs[0];
+                    const estimatedTime = route.duration.text;
+                    const distance = route.distance.value / 1000; // Convert to km
+
+                    // Calculate carbon savings (simple estimation: 120g/km for an average car)
+                    const carbonSaved = calculateCarbonSavings(distance);
+
+                    document.getElementById("start-location").innerText = ${currentLocation.lat}, ${currentLocation.lng};
+                    document.getElementById("end-location").innerText = destination;
+                    document.getElementById("estimated-time").innerText = estimatedTime;
+                    document.getElementById("carbon-saved").innerText = carbonSaved;
+
+                    document.getElementById("routeDetails").style.display = "block";
+                } else {
+                    alert("Could not calculate route. Please try again.");
+                }
+            });
+        });
+
+        // Simple function to estimate carbon savings (grams)
+        function calculateCarbonSavings(distance) {
+            const avgCarbonEmissionPerKm = 120; // in grams
+            const ecoRouteFactor = 0.8; // assuming eco-route reduces emissions by 20%
+            const ecoCarbonEmission = avgCarbonEmissionPerKm * ecoRouteFactor;
+            const savedCarbon = (avgCarbonEmissionPerKm - ecoCarbonEmission) * distance;
+            return savedCarbon.toFixed(2);
+        }
+
+        // Initialize the map on page load
+        window.onload = initMap;
+    </script>
 </body>
 </html>
